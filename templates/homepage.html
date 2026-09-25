@@ -135,8 +135,9 @@
 
         <div class="d-flex">
             <button class="btn btn-outline-primary flex-fill active" id="two-players" onclick="selectPlayers(event)">Two</button>
-            <button class="btn btn-outline-primary flex-fill" onclick="selectPlayers(event)">Three</button>
-            <button class="btn btn-outline-primary flex-fill" onclick="selectPlayers(event)">Four</button>
+            <!-- 3-4 players isn't supported yet (scoring, game screens and records assume 2) -->
+            <button class="btn btn-outline-primary flex-fill" onclick="selectPlayers(event)" disabled title="Coming soon">Three</button>
+            <button class="btn btn-outline-primary flex-fill" onclick="selectPlayers(event)" disabled title="Coming soon">Four</button>
         </div>
 
         <script>

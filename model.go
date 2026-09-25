@@ -64,6 +64,9 @@ func scoreActiveGame(id string, player int, incr int, s Storage) (ActiveGame, *F
 			return err
 		}
 		g.Id = id
+		if err := validateScore(g, player, incr); err != nil {
+			return err
+		}
 		g.Players[player].Score += incr
 
 		if g.Players[player].Score >= g.MaxScore {

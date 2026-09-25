@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (srv *server) indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +32,15 @@ func (srv *server) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	gameType := r.FormValue("game")
 	gamePlayers := r.Form["players"]
-	gameMax, _ := strconv.Atoi(r.FormValue("max"))
+	for i := range gamePlayers {
+		gamePlayers[i] = strings.TrimSpace(gamePlayers[i])
+	}
+	gameMax, _ := strconv.Atoi(r.FormValue("max")) // only used for dominoes; validated below
+
+	if err := validateNewGame(gameType, gamePlayers, gameMax); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	if g, err := createActiveGame(gameType, gamePlayers, gameMax, s); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -50,11 +59,18 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gameId := r.Form.Get("gameId")
-	player, _ := strconv.Atoi(r.Form.Get("player"))
-	incr, _ := strconv.Atoi(r.Form.Get("increment"))
+	player, perr := strconv.Atoi(r.Form.Get("player"))
+	incr, ierr := strconv.Atoi(r.Form.Get("increment"))
+	if gameId == "" || perr != nil || ierr != nil {
+		http.Error(w, "gameId, player and increment are required", http.StatusBadRequest)
+		return
+	}
 
 	g, f, err := scoreActiveGame(gameId, player, incr, s)
-	if err != nil {
+	if isBadRequest(err) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -48,4 +48,5 @@ jobs:
             --region=us-central1 \
             --project=mattlovedev-apps \
             --service-account=score-run@mattlovedev-apps.iam.gserviceaccount.com \
+            --max-instances=2 \
             --quiet

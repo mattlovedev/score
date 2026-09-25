@@ -130,11 +130,11 @@ type server struct {
 func newRouter(s Storage, t TemplateGetter) http.Handler {
 	srv := &server{storage: s, tmpl: t}
 	router := http.NewServeMux()
-	router.HandleFunc("/{$}", srv.indexHandler)
-	router.HandleFunc("/start", srv.startHandler)
-	router.HandleFunc("/score", srv.scoreHandler)
-	router.HandleFunc("/delete", srv.deleteHandler)
-	router.HandleFunc("/continue", srv.continueHandler)
+	router.HandleFunc("GET /{$}", srv.indexHandler)
+	router.HandleFunc("POST /start", srv.startHandler)
+	router.HandleFunc("POST /score", srv.scoreHandler)
+	router.HandleFunc("POST /delete", srv.deleteHandler)
+	router.HandleFunc("POST /continue", srv.continueHandler)
 	router.HandleFunc("GET /favicon.svg", faviconHandler)
 	return router
 }

@@ -31,7 +31,8 @@
                     hx-target="#active-games"
                     hx-swap="innerHTML"
                     hx-vals='{"gameId": "{{.Id}}"}'
-                    class="btn btn-primary">Delete</button>
+                    hx-confirm="Delete this {{.Type}} game? {{(index .Players 0).Name}} {{(index .Players 0).Score}} – {{(index .Players 1).Name}} {{(index .Players 1).Score}}"
+                    class="btn btn-outline-danger">Delete</button>
         </td>
     </tr>
     {{end}}

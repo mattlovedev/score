@@ -30,7 +30,7 @@ func loadFinishedGames(s Storage) ([]FinishedGame, error) {
 }
 
 func createActiveGame(gameType string, gamePlayers []string, max int, s Storage) (ActiveGame, error) {
-	g := NewActiveGame(GenerateRandomString(16), gameType, gamePlayers, max)
+	g := NewActiveGame(newGameID(), gameType, gamePlayers, max)
 	if err := s.Add(activeGamesCollection, g.Id, g); err != nil {
 		return ActiveGame{}, err
 	}

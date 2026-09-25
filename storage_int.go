@@ -1,9 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"errors"
 	"io/fs"
-	"math/rand"
 	"reflect"
 
 	"cloud.google.com/go/firestore"
@@ -11,15 +11,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func GenerateRandomString(length int) string {
-	seededRand := rand.New(rand.NewSource(timeNow().UnixNano()))
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
+// newGameID returns a random, unguessable document id (26 base32 characters).
+func newGameID() string {
+	return rand.Text()
 }
 
 func getResultValAndType(p interface{}) (reflect.Value, reflect.Type, error) {

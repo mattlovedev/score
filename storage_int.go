@@ -2,10 +2,13 @@ package main
 
 import (
 	"errors"
+	"io/fs"
 	"math/rand"
 	"reflect"
 
 	"cloud.google.com/go/firestore"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -91,6 +94,12 @@ type Storage interface {
 	// RunTransaction runs fn atomically. fn may be retried, so it must not keep
 	// state between calls. All Gets must happen before any Set or Delete.
 	RunTransaction(fn func(tx Tx) error) error
+}
+
+// isNotFound reports whether err means the document doesn't exist, for either
+// storage backend.
+func isNotFound(err error) bool {
+	return status.Code(err) == codes.NotFound || errors.Is(err, fs.ErrNotExist)
 }
 
 // Tx is the subset of Storage available inside a transaction.

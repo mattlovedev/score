@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,13 +12,13 @@ func (srv *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	s := srv.storage
 	t := srv.tmpl.GetTemplate()
 	if active, err := loadActiveGames(s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if finished, err := loadFinishedGames(s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if players, err := loadPlayerRecords(s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if err = t.ExecuteTemplate(w, "homepage.html", HomePage{Active: active, Finished: finished, Players: players}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	}
 }
 
@@ -26,7 +27,7 @@ func (srv *server) startHandler(w http.ResponseWriter, r *http.Request) {
 	t := srv.tmpl.GetTemplate()
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, badRequest("invalid form: %v", err))
 		return
 	}
 
@@ -38,14 +39,14 @@ func (srv *server) startHandler(w http.ResponseWriter, r *http.Request) {
 	gameMax, _ := strconv.Atoi(r.FormValue("max")) // only used for dominoes; validated below
 
 	if err := validateNewGame(gameType, gamePlayers, gameMax); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, r, err)
 		return
 	}
 
 	if g, err := createActiveGame(gameType, gamePlayers, gameMax, s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	}
 }
 
@@ -54,7 +55,7 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 	t := srv.tmpl.GetTemplate()
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, badRequest("invalid form: %v", err))
 		return
 	}
 
@@ -67,18 +68,15 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g, f, err := scoreActiveGame(gameId, player, incr, s)
-	if isBadRequest(err) {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		writeError(w, r, err)
 		return
 	}
 
 	if f != nil {
 		winner, loser, err := getPlayers(*f, s)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			writeError(w, r, err)
 			return
 		}
 
@@ -89,13 +87,13 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err = t.ExecuteTemplate(w, "gameover", gameover); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			writeError(w, r, err)
 		}
 		return
 	}
 
 	if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	}
 }
 
@@ -104,18 +102,18 @@ func (srv *server) deleteHandler(w http.ResponseWriter, r *http.Request) {
 	t := srv.tmpl.GetTemplate()
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, badRequest("invalid form: %v", err))
 		return
 	}
 
 	gameId := r.Form.Get("gameId")
 
 	if err := deleteActiveGame(gameId, s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if games, err := loadActiveGames(s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if err = t.ExecuteTemplate(w, "active-games", games); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	}
 
 }
@@ -125,16 +123,31 @@ func (srv *server) continueHandler(w http.ResponseWriter, r *http.Request) {
 	t := srv.tmpl.GetTemplate()
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, badRequest("invalid form: %v", err))
 		return
 	}
 
 	gameId := r.Form.Get("gameId")
 
 	if g, err := getActiveGame(gameId, s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
 	} else if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, r, err)
+	}
+}
+
+// writeError sends err to the client. Validation errors and missing games get
+// their own status and message; anything else is logged and hidden behind a
+// generic 500, so internal details don't reach the page.
+func writeError(w http.ResponseWriter, r *http.Request, err error) {
+	switch {
+	case isBadRequest(err):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	case isNotFound(err):
+		http.Error(w, "That game no longer exists.", http.StatusNotFound)
+	default:
+		log.Printf("%s %s: %v", r.Method, r.URL.Path, err)
+		http.Error(w, "Something went wrong, try again.", http.StatusInternalServerError)
 	}
 }
 

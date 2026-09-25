@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"net/http"
 	"strconv"
 )
@@ -147,5 +148,15 @@ func newRouter(s Storage, t TemplateGetter) http.Handler {
 	router.HandleFunc("/score", srv.scoreHandler)
 	router.HandleFunc("/delete", srv.deleteHandler)
 	router.HandleFunc("/continue", srv.continueHandler)
+	router.HandleFunc("GET /favicon.svg", faviconHandler)
 	return router
+}
+
+//go:embed static/favicon.svg
+var favicon []byte
+
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(favicon)
 }

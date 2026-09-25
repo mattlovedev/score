@@ -9,6 +9,18 @@
             increment
         }
     }
+
+    // Used to confirm taps that would end the game. var, not const: htmx re-runs
+    // this script on every swap, and a top-level const can't be redeclared.
+    var game = {
+        scores: [{{ (index .Players 0).Score }}, {{ (index .Players 1).Score }}],
+        names: [{{ (index .Players 0).Name }}, {{ (index .Players 1).Name }}],
+        max: {{ .MaxScore }}
+    }
+
+    function escapeAttr(s) {
+        return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    }
 </script>
 
     <div class="row">
@@ -46,8 +58,14 @@
     function makeButton(player, increment) {
         const sign = (increment > 0) ? "+" : ""
         const cl = (increment > 0) ? "btn-success" : "btn-danger"
-        return '<button type="button" class="btn ' + cl + '"' +
-        'hx-post="/score" hx-target="#content" hx-swap="outerHTML"' +
+        let confirm = ""
+        if (increment > 0 && game.scores[player] + increment >= game.max) {
+            const other = 1 - player
+            confirm = ' hx-confirm="' + escapeAttr("End the game? " + game.names[player] + " wins " +
+                game.max + "–" + game.scores[other] + ".") + '"'
+        }
+        return '<button type="button" class="btn ' + cl + '"' + confirm +
+        ' hx-post="/score" hx-target="#content" hx-swap="outerHTML"' +
         'hx-vals="js:{...makeIncr(' + player + ', ' + increment + ')}">' +
             sign + increment.toString() + '</button>'
     }

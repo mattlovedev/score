@@ -122,8 +122,8 @@ func playerRecords(games []FinishedGame) []Player {
 	return players
 }
 
-// getPlayers returns the current records of a finished game's winner and loser.
-func getPlayers(f FinishedGame, s Storage) (Player, Player, error) {
+// winnerAndLoserRecords returns the current records of a finished game's winner and loser.
+func winnerAndLoserRecords(f FinishedGame, s Storage) (Player, Player, error) {
 	players, err := loadPlayerRecords(s)
 	if err != nil {
 		return Player{}, Player{}, err

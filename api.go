@@ -59,22 +59,22 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gameId := r.Form.Get("gameId")
+	gameID := r.Form.Get("gameId")
 	player, perr := strconv.Atoi(r.Form.Get("player"))
 	incr, ierr := strconv.Atoi(r.Form.Get("increment"))
-	if gameId == "" || perr != nil || ierr != nil {
+	if gameID == "" || perr != nil || ierr != nil {
 		http.Error(w, "gameId, player and increment are required", http.StatusBadRequest)
 		return
 	}
 
-	g, f, err := scoreActiveGame(gameId, player, incr, s)
+	g, f, err := scoreActiveGame(gameID, player, incr, s)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
 
 	if f != nil {
-		winner, loser, err := getPlayers(*f, s)
+		winner, loser, err := winnerAndLoserRecords(*f, s)
 		if err != nil {
 			writeError(w, r, err)
 			return
@@ -106,9 +106,9 @@ func (srv *server) deleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gameId := r.Form.Get("gameId")
+	gameID := r.Form.Get("gameId")
 
-	if err := deleteActiveGame(gameId, s); err != nil {
+	if err := deleteActiveGame(gameID, s); err != nil {
 		writeError(w, r, err)
 	} else if games, err := loadActiveGames(s); err != nil {
 		writeError(w, r, err)
@@ -127,9 +127,9 @@ func (srv *server) continueHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gameId := r.Form.Get("gameId")
+	gameID := r.Form.Get("gameId")
 
-	if g, err := getActiveGame(gameId, s); err != nil {
+	if g, err := getActiveGame(gameID, s); err != nil {
 		writeError(w, r, err)
 	} else if err = t.ExecuteTemplate(w, "game", g); err != nil {
 		writeError(w, r, err)

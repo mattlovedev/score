@@ -1,0 +1,18 @@
+{{define "gameover"}}
+<div id="content" class="text-center">
+    <h1>{{.Winner.Name}} wins!</h1>
+    {{if eq .Game.Type "Cribbage"}}
+        <h5>({{.Winner.Cribbage.Wins}} - {{.Winner.Cribbage.Losses}}) in Cribbage</h5>
+    {{else}}
+        <h5>({{.Winner.Dominoes.Wins}} - {{.Winner.Dominoes.Losses}}) in Dominoes</h5>
+    {{end}}
+    <h3>{{.Game.Winner.Score}}</h3>
+    <h3>{{.Game.Loser.Score}}</h3>
+    <h2>{{.Loser.Name}} loses..</h2>
+    {{if eq .Game.Type "Cribbage"}}
+        <h5>({{.Loser.Cribbage.Wins}} - {{.Loser.Cribbage.Losses}}) in Cribbage</h5>
+    {{else}}
+        <h5>({{.Loser.Dominoes.Wins}} - {{.Loser.Dominoes.Losses}}) in Dominoes</h5>
+    {{end}}
+</div>
+{{end}}

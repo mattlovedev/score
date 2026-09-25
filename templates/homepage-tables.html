@@ -1,0 +1,36 @@
+{{define "homepage-tables"}}
+<table class="table">
+    <thead>
+    <th>Date</th>
+    <th>Game</th>
+    <th>Players</th>
+    <th>Actions</th>
+    </thead>
+    <tbody>
+    {{range .}}
+    <tr>
+        <td>{{.Date.Format "Jan 02 03:04 PM"}}</td>
+        <td>{{.Type}} / {{.MaxScore}}</td>
+        <td>
+            {{(index .Players 0).Name}}
+            ({{(index .Players 0).Score}}) -
+            {{(index .Players 1).Name}}
+            ({{(index .Players 1).Score}})
+        </td>
+        <td>
+            <button hx-post="/continue"
+                    hx-target="#content"
+                    hx-swap="outerHTML"
+                    hx-vals='{"gameId": "{{.Id}}"}'
+                    class="btn btn-primary">Continue</button>
+            <button hx-post="/delete"
+                    hx-target="#unfinished-games"
+                    hx-swap="innerHTML"
+                    hx-vals='{"gameId": "{{.Id}}"}'
+                    class="btn btn-primary">Delete</button>
+        </td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+{{end}}

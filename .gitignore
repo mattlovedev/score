@@ -1,0 +1,7 @@
+.idea/
+
+# local dev data written by `go run . -local`
+storage/
+
+# go build output
+/score

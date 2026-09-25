@@ -1,0 +1,51 @@
+name: Deploy to Cloud Run
+
+# A merged PR is a push to main, so this covers both.
+# paths-ignore skips the deploy when every changed file is one that never reaches the image.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - '.idea/**'
+
+permissions:
+  contents: read
+  id-token: write # required for the WIF OIDC token exchange - no stored key
+
+env:
+  IMAGE: us-central1-docker.pkg.dev/mattlovedev-apps/score/score:${{ github.sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/897544343087/locations/global/workloadIdentityPools/github/providers/github
+          service_account: score-deploy@mattlovedev-apps.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        run: |
+          docker build --platform=linux/amd64 -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      # Public access (allUsers invoker) is set once on the service, not here -
+      # score-deploy only has run.developer on this service and can't change IAM.
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy score \
+            --image="$IMAGE" \
+            --region=us-central1 \
+            --project=mattlovedev-apps \
+            --service-account=score-run@mattlovedev-apps.iam.gserviceaccount.com \
+            --quiet

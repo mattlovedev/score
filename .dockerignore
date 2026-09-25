@@ -1,0 +1,6 @@
+.git
+.idea
+storage
+templates
+Dockerfile
+.dockerignore

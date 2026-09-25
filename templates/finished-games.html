@@ -1,0 +1,25 @@
+{{define "finished-games"}}
+{{if len .}}
+<div class="h3 text-center">
+    Finished Games
+</div>
+<table class="table">
+    <thead>
+    <th>Date</th>
+    <th>Game</th>
+    <th>Winner</th>
+    <th>Loser</th>
+    </thead>
+    <tbody>
+    {{range .}}
+    <tr>
+        <td>{{.Date.Format "Jan 02 03:04 PM"}}</td>
+        <td>{{.Type}} / {{.MaxScore}}</td>
+        <td>{{.Winner.Name}} ({{.Winner.Score}})</td>
+        <td>{{.Loser.Name}} ({{.Loser.Score}})</td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+{{end}}
+{{end}}

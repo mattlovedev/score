@@ -1,0 +1,67 @@
+{{define "dominoes"}}
+<div id="content" class="text-center">
+
+<script>
+    function makeIncr(player, increment) {
+        return {
+            gameId: "{{ .Id }}",
+            player,
+            increment
+        }
+    }
+</script>
+
+    <div class="row">
+        <div class="col">
+            <div>
+                <span class="h1">
+                    {{ (index .Players 0).Score }}
+                </span>
+                <span class="h6">
+                    / {{ .MaxScore }}
+                </span>
+            </div>
+            <div class="h5">
+                {{ (index .Players 0).Name }}
+            </div>
+            <div id="p0-buttons"></div>
+        </div>
+        <div class="col">
+            <div>
+                <span class="h1">
+                    {{ (index .Players 1).Score }}
+                </span>
+                <span class="h6">
+                    / {{ .MaxScore }}
+                </span>
+            </div>
+            <div class="h5">
+                {{ (index .Players 1).Name }}
+            </div>
+            <div id="p1-buttons"></div>
+        </div>
+    </div>
+
+<script>
+    function makeButton(player, increment) {
+        const sign = (increment > 0) ? "+" : ""
+        const cl = (increment > 0) ? "btn-success" : "btn-danger"
+        return '<button type="button" class="btn ' + cl + '"' +
+        'hx-post="/score" hx-target="#content" hx-swap="outerHTML"' +
+        'hx-vals="js:{...makeIncr(' + player + ', ' + increment + ')}">' +
+            sign + increment.toString() + '</button>'
+    }
+    function makeButtonPair(player, increment) {
+        return '<div>' + makeButton(player, increment) +
+            makeButton(player, -1 * increment) + '</div>'
+    }
+    function makeButtons(player) {
+        return makeButtonPair(player, 5) + makeButtonPair(player, 10) + makeButtonPair(player, 15) +
+            makeButtonPair(player, 20) + makeButtonPair(player, 25) + makeButtonPair(player , 30)
+    }
+    document.getElementById("p0-buttons").innerHTML = makeButtons(0)
+    document.getElementById("p1-buttons").innerHTML = makeButtons(1)
+</script>
+
+</div>
+{{end}}

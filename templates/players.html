@@ -1,0 +1,33 @@
+{{define "players"}}
+{{if len .}}
+<div class="h3 text-center">
+    Players
+</div>
+<table class="table">
+    <thead>
+    <tr>
+        <th rowspan="2">Player</th>
+        <th colspan="2">Cribbage</th>
+        <th colspan="2">Dominoes</th>
+    </tr>
+    <tr>
+        <th>Wins</th>
+        <th>Losses</th>
+        <th>Wins</th>
+        <th>Losses</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .}}
+    <tr>
+        <td>{{.Name}}</td>
+        <td>{{.Cribbage.Wins}}</td>
+        <td>{{.Cribbage.Losses}}</td>
+        <td>{{.Dominoes.Wins}}</td>
+        <td>{{.Dominoes.Losses}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+{{end}}
+{{end}}

@@ -1,4 +1,4 @@
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 WORKDIR /src
 
 # Separate layer for deps so a source-only change doesn't re-download modules.

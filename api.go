@@ -15,7 +15,7 @@ func (srv *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if players, err := loadPlayerRecords(s); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else if err = t.Execute(w, HomePage{Active: active, Finished: finished, Players: players}); err != nil {
+	} else if err = t.ExecuteTemplate(w, "homepage.html", HomePage{Active: active, Finished: finished, Players: players}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

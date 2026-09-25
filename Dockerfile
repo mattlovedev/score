@@ -7,10 +7,11 @@ RUN go mod download
 
 COPY *.go ./
 COPY static ./static
+COPY templates ./templates
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /score .
 
 # Static binary on distroless: CA certs for Google APIs, no shell, runs as nonroot.
-# Templates aren't baked in - they're read from the GCS bucket at startup.
+# Templates and the favicon are embedded in the binary.
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /score /score
 

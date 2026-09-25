@@ -17,7 +17,7 @@ func getenv(key, fallback string) string {
 }
 
 func main() {
-	local := flag.Bool("local", false, "use ./templates and ./storage instead of GCS and Firestore")
+	local := flag.Bool("local", false, "use ./templates (re-read per request) and ./storage instead of the embedded templates and Firestore")
 	flag.Parse()
 
 	var s Storage
@@ -26,21 +26,19 @@ func main() {
 		s, t = &LocalStorage{}, &LocalTemplate{}
 		log.Print("using local templates and storage")
 	} else {
-		ctx := context.Background()
 		project := getenv("SCORE_PROJECT", "mattlovedev-apps")
 		database := getenv("SCORE_DATABASE", "score")
-		bucket := getenv("SCORE_TEMPLATES_BUCKET", "mattlovedev-apps-score-templates")
 
-		fs, err := NewFirestoreStorage(ctx, project, database)
+		fs, err := NewFirestoreStorage(context.Background(), project, database)
 		if err != nil {
 			log.Fatalf("firestore %s/%s: %v", project, database, err)
 		}
-		gt, err := NewGcsTemplate(ctx, bucket)
+		et, err := NewEmbeddedTemplate()
 		if err != nil {
-			log.Fatalf("templates gs://%s: %v", bucket, err)
+			log.Fatalf("templates: %v", err)
 		}
-		s, t = fs, gt
-		log.Printf("using firestore %s/%s and templates gs://%s", project, database, bucket)
+		s, t = fs, et
+		log.Printf("using firestore %s/%s and embedded templates", project, database)
 	}
 
 	port := getenv("PORT", "8080")

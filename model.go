@@ -1,5 +1,7 @@
 package main
 
+import "sort"
+
 func loadActiveGames(s Storage) ([]ActiveGame, error) {
 	var games []ActiveGame
 	query := NewQuery().
@@ -44,98 +46,93 @@ func getActiveGame(id string, s Storage) (ActiveGame, error) {
 	return g, nil
 }
 
-func updateActiveGame(g ActiveGame, s Storage) error {
-	g.Date = timeNow()
-	return s.Set(activeGamesCollection, g.Id, g)
-}
-
 func deleteActiveGame(id string, s Storage) error {
 	return s.Delete(activeGamesCollection, id)
 }
 
-func LoadPlayers(s Storage) ([]Player, error) {
-	var players []Player
-	if err := s.Query(playersCollection, NewQuery(), &players); err != nil {
+// scoreActiveGame adds incr to a player's score in one transaction, so taps that
+// arrive together can't overwrite each other. If the score reaches the game's max,
+// the game moves to finishedGames (under the same id) in that same transaction and
+// is returned as finished; a second tap on an already finished game fails because
+// the active game is gone, so a win can't be counted twice.
+func scoreActiveGame(id string, player int, incr int, s Storage) (ActiveGame, *FinishedGame, error) {
+	var g ActiveGame
+	var f *FinishedGame
+	err := s.RunTransaction(func(tx Tx) error {
+		g, f = ActiveGame{}, nil
+		if err := tx.Get(activeGamesCollection, id, &g); err != nil {
+			return err
+		}
+		g.Id = id
+		g.Players[player].Score += incr
+
+		if g.Players[player].Score >= g.MaxScore {
+			g.Players[player].Score = g.MaxScore
+			finished := g.Finished()
+			f = &finished
+			if err := tx.Set(finishedGamesCollection, finished.Id, finished); err != nil {
+				return err
+			}
+			return tx.Delete(activeGamesCollection, id)
+		}
+
+		g.Date = timeNow()
+		return tx.Set(activeGamesCollection, id, g)
+	})
+	return g, f, err
+}
+
+// loadPlayerRecords tallies every player's wins and losses from all finished games.
+func loadPlayerRecords(s Storage) ([]Player, error) {
+	var games []FinishedGame
+	if err := s.Query(finishedGamesCollection, NewQuery(), &games); err != nil {
 		return nil, err
 	}
-	return players, nil
+	return playerRecords(games), nil
 }
 
-func getPlayer(name string, s Storage) (Player, error) {
-	var p Player
-	if err := s.Get(playersCollection, name, &p); err != nil {
-		return Player{}, err
-	}
-	return p, nil
-}
-
-func createPlayer(player Player, s Storage) error {
-	return s.Add(playersCollection, player.Name, player)
-}
-
-func UpdatePlayer(player Player, s Storage) error {
-	return s.Set(playersCollection, player.Name, player)
-}
-
-func switchActiveGameToFinished(g ActiveGame, s Storage) (FinishedGame, error) {
-	f := g.Finished()
-	var err error
-	var winner, loser Player
-	// ideally this would be a transaction obv
-	if err = s.Set(finishedGamesCollection, f.Id, f); err != nil {
-		return FinishedGame{}, err
-	}
-	if winner, err = getPlayer(f.Winner.Name, s); err != nil {
-		if f.Type == gameCribbage {
-			winner = Player{Name: f.Winner.Name, Cribbage: WinsLosses{Wins: 1, Losses: 0}}
-		} else if f.Type == gameDominoes {
-			winner = Player{Name: f.Winner.Name, Dominoes: WinsLosses{Wins: 1, Losses: 0}}
+// playerRecords returns each player's wins and losses in games, sorted by name.
+func playerRecords(games []FinishedGame) []Player {
+	byName := map[string]*Player{}
+	record := func(name string) *Player {
+		if byName[name] == nil {
+			byName[name] = &Player{Name: name}
 		}
-		if err = createPlayer(winner, s); err != nil {
-			return FinishedGame{}, err
-		}
-	} else {
-		if f.Type == gameCribbage {
+		return byName[name]
+	}
+	for _, g := range games {
+		winner, loser := record(g.Winner.Name), record(g.Loser.Name)
+		switch g.Type {
+		case gameCribbage:
 			winner.Cribbage.Wins++
-		} else if f.Type == gameDominoes {
-			winner.Dominoes.Wins++
-		}
-		if err = UpdatePlayer(winner, s); err != nil {
-			return FinishedGame{}, err
-		}
-	}
-	if loser, err = getPlayer(f.Loser.Name, s); err != nil {
-		if f.Type == gameCribbage {
-			loser = Player{Name: f.Loser.Name, Cribbage: WinsLosses{Wins: 0, Losses: 1}}
-		} else if f.Type == gameDominoes {
-			loser = Player{Name: f.Loser.Name, Dominoes: WinsLosses{Wins: 0, Losses: 1}}
-		}
-		if err = createPlayer(loser, s); err != nil {
-			return FinishedGame{}, err
-		}
-	} else {
-		if f.Type == gameCribbage {
 			loser.Cribbage.Losses++
-		} else if f.Type == gameDominoes {
+		case gameDominoes:
+			winner.Dominoes.Wins++
 			loser.Dominoes.Losses++
 		}
-		if err = UpdatePlayer(loser, s); err != nil {
-			return FinishedGame{}, err
-		}
 	}
-	if err = s.Delete(activeGamesCollection, g.Id); err != nil {
-		return FinishedGame{}, err
+	players := make([]Player, 0, len(byName))
+	for _, p := range byName {
+		players = append(players, *p)
 	}
-	return f, nil
+	sort.Slice(players, func(i, j int) bool { return players[i].Name < players[j].Name })
+	return players
 }
 
+// getPlayers returns the current records of a finished game's winner and loser.
 func getPlayers(f FinishedGame, s Storage) (Player, Player, error) {
-	var winner, loser Player
-	if err := s.Get(playersCollection, f.Winner.Name, &winner); err != nil {
+	players, err := loadPlayerRecords(s)
+	if err != nil {
 		return Player{}, Player{}, err
 	}
-	if err := s.Get(playersCollection, f.Loser.Name, &loser); err != nil {
-		return Player{}, Player{}, err
+	var winner, loser Player
+	for _, p := range players {
+		switch p.Name {
+		case f.Winner.Name:
+			winner = p
+		case f.Loser.Name:
+			loser = p
+		}
 	}
 	return winner, loser, nil
 }

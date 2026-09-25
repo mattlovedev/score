@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -152,4 +153,14 @@ func (l LocalStorage) Set(collection Collection, id string, value any) error {
 
 func (l LocalStorage) Count(collection Collection, query Query) (int, error) {
 	return 0, nil
+}
+
+var localTxMu sync.Mutex
+
+// RunTransaction serializes transactions with a mutex. There's no rollback, which
+// is fine for local testing.
+func (l LocalStorage) RunTransaction(fn func(tx Tx) error) error {
+	localTxMu.Lock()
+	defer localTxMu.Unlock()
+	return fn(l)
 }

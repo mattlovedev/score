@@ -94,3 +94,31 @@ func (f *FirestoreStorage) Set(collection Collection, id string, value any) erro
 func (f *FirestoreStorage) Count(collection Collection, query Query) (int, error) {
 	return 0, nil
 }
+
+func (f *FirestoreStorage) RunTransaction(fn func(tx Tx) error) error {
+	client := f.getClient()
+	return client.RunTransaction(context.Background(), func(ctx context.Context, tx *firestore.Transaction) error {
+		return fn(&firestoreTx{client: client, tx: tx})
+	})
+}
+
+type firestoreTx struct {
+	client *firestore.Client
+	tx     *firestore.Transaction
+}
+
+func (t *firestoreTx) Get(collection Collection, id string, val any) error {
+	doc, err := t.tx.Get(t.client.Collection(string(collection)).Doc(id))
+	if err != nil {
+		return err
+	}
+	return doc.DataTo(val)
+}
+
+func (t *firestoreTx) Set(collection Collection, id string, value any) error {
+	return t.tx.Set(t.client.Collection(string(collection)).Doc(id), value)
+}
+
+func (t *firestoreTx) Delete(collection Collection, id string) error {
+	return t.tx.Delete(t.client.Collection(string(collection)).Doc(id))
+}

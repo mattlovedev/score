@@ -13,7 +13,7 @@ func (srv *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if finished, err := loadFinishedGames(s); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else if players, err := LoadPlayers(s); err != nil {
+	} else if players, err := loadPlayerRecords(s); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if err = t.Execute(w, HomePage{Active: active, Finished: finished, Players: players}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,31 +53,21 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 	player, _ := strconv.Atoi(r.Form.Get("player"))
 	incr, _ := strconv.Atoi(r.Form.Get("increment"))
 
-	g, err := getActiveGame(gameId, s)
+	g, f, err := scoreActiveGame(gameId, player, incr, s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	g.Players[player].Score += incr
-
-	if g.Players[player].Score >= g.MaxScore {
-		g.Players[player].Score = g.MaxScore
-
-		f, err := switchActiveGameToFinished(g, s)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		winner, loser, err := getPlayers(f, s)
+	if f != nil {
+		winner, loser, err := getPlayers(*f, s)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		gameover := GameOver{
-			Game:   f,
+			Game:   *f,
 			Winner: winner,
 			Loser:  loser,
 		}
@@ -88,12 +78,9 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = updateActiveGame(g, s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
+	if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
 }
 
 func (srv *server) deleteHandler(w http.ResponseWriter, r *http.Request) {

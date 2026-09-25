@@ -49,7 +49,6 @@ type Collection string
 const (
 	activeGamesCollection   Collection = "activeGames"
 	finishedGamesCollection Collection = "finishedGames"
-	playersCollection       Collection = "players"
 )
 
 type Order struct {
@@ -89,4 +88,14 @@ type Storage interface {
 	Query(collection Collection, query Query, vals any) error
 	Set(collection Collection, id string, value any) error
 	Count(collection Collection, query Query) (int, error)
+	// RunTransaction runs fn atomically. fn may be retried, so it must not keep
+	// state between calls. All Gets must happen before any Set or Delete.
+	RunTransaction(fn func(tx Tx) error) error
+}
+
+// Tx is the subset of Storage available inside a transaction.
+type Tx interface {
+	Get(collection Collection, id string, val any) error
+	Set(collection Collection, id string, value any) error
+	Delete(collection Collection, id string) error
 }

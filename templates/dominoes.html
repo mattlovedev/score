@@ -1,5 +1,5 @@
 {{define "dominoes"}}
-<div id="content" class="text-center">
+<div id="content" class="text-center mt-3">
 
 <script>
     function makeIncr(player, increment) {
@@ -23,11 +23,11 @@
     }
 </script>
 
-    <div class="text-start">
+    <div>
         <a href="/" class="btn btn-sm btn-outline-secondary">Home</a>
     </div>
 
-    <div class="row">
+    <div class="row mt-3">
         <div class="col">
             <div>
                 <span class="h1">
@@ -37,10 +37,10 @@
                     / {{ .MaxScore }}
                 </span>
             </div>
-            <div class="h5">
+            <div class="h5 mt-2">
                 {{ (index .Players 0).Name }}
             </div>
-            <div id="p0-buttons"></div>
+            <div id="p0-buttons" class="mt-3"></div>
         </div>
         <div class="col">
             <div>
@@ -51,10 +51,10 @@
                     / {{ .MaxScore }}
                 </span>
             </div>
-            <div class="h5">
+            <div class="h5 mt-2">
                 {{ (index .Players 1).Name }}
             </div>
-            <div id="p1-buttons"></div>
+            <div id="p1-buttons" class="mt-3"></div>
         </div>
     </div>
 
@@ -74,7 +74,7 @@
             sign + increment.toString() + '</button>'
     }
     function makeButtonPair(player, increment) {
-        return '<div>' + makeButton(player, increment) +
+        return '<div class="mt-2">' + makeButton(player, increment) +
             makeButton(player, -1 * increment) + '</div>'
     }
     function makeButtons(player) {

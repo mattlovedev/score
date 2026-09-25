@@ -5,15 +5,17 @@
 </div>
 <table class="table">
     <thead>
-    <th>Date</th>
-    <th>Game</th>
-    <th>Players</th>
-    <th>Actions</th>
+    <tr>
+        <th>Date</th>
+        <th>Game</th>
+        <th>Players</th>
+        <th>Actions</th>
+    </tr>
     </thead>
     <tbody>
     {{range .}}
     <tr>
-        <td>{{.Date.Format "Jan 02 03:04 PM"}}</td>
+        <td>{{.Date.Format "Jan 2, 2006 3:04 PM"}}</td>
         <td>{{.Type}} / {{.MaxScore}}</td>
         <td>
             {{(index .Players 0).Name}}

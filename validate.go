@@ -10,15 +10,8 @@ import (
 
 const maxNameLength = 40
 
-var (
-	// dominoesMaxScores matches the options on the start form.
-	dominoesMaxScores = []int{100, 150, 200, 250}
-	// maxIncrement is the largest button on each game's scoring screen.
-	maxIncrement = map[string]int{
-		gameCribbage: 15,
-		gameDominoes: 30,
-	}
-)
+// dominoesMaxScores matches the options on the start form.
+var dominoesMaxScores = []int{100, 150, 200, 250}
 
 // badRequestError is a validation failure; its message is safe to return to the
 // client with a 400.
@@ -76,7 +69,12 @@ func validateScore(g ActiveGame, player int, incr int) error {
 	if player < 0 || player >= len(g.Players) {
 		return badRequest("no player %d in this game", player)
 	}
-	if limit := maxIncrement[g.Type]; incr == 0 || incr > limit || incr < -limit {
+	// Allow anything up to the largest button on the game's scoring screen.
+	buttons := g.Buttons()
+	if len(buttons) == 0 {
+		return badRequest("unknown game %q", g.Type)
+	}
+	if limit := slices.Max(buttons); incr == 0 || incr > limit || incr < -limit {
 		return badRequest("increment must be between -%d and %d, and not 0", limit, limit)
 	}
 	return nil

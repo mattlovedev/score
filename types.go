@@ -90,12 +90,15 @@ func (g ActiveGame) Finished() FinishedGame {
 	return f
 }
 
-func (g ActiveGame) Template() string {
-	templates := map[string]string{
-		gameCribbage: "cribbage",
-		gameDominoes: "dominoes",
-	}
-	return templates[g.Type]
+// scoreButtons are the +/- amounts on each game's scoring screen.
+var scoreButtons = map[string][]int{
+	gameCribbage: {1, 2, 3, 4, 5, 10, 15},
+	gameDominoes: {5, 10, 15, 20, 25, 30},
+}
+
+// Buttons returns the +/- amounts for the game's scoring screen.
+func (g ActiveGame) Buttons() []int {
+	return scoreButtons[g.Type]
 }
 
 type HomePage struct {

@@ -45,7 +45,7 @@ func (srv *server) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	if g, err := createActiveGame(gameType, gamePlayers, gameMax, s); err != nil {
 		writeError(w, r, err)
-	} else if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
+	} else if err = t.ExecuteTemplate(w, "game", g); err != nil {
 		writeError(w, r, err)
 	}
 }
@@ -92,7 +92,7 @@ func (srv *server) scoreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
+	if err = t.ExecuteTemplate(w, "game", g); err != nil {
 		writeError(w, r, err)
 	}
 }
@@ -131,7 +131,7 @@ func (srv *server) continueHandler(w http.ResponseWriter, r *http.Request) {
 
 	if g, err := getActiveGame(gameId, s); err != nil {
 		writeError(w, r, err)
-	} else if err = t.ExecuteTemplate(w, g.Template(), g); err != nil {
+	} else if err = t.ExecuteTemplate(w, "game", g); err != nil {
 		writeError(w, r, err)
 	}
 }

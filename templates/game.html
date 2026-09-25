@@ -1,4 +1,4 @@
-{{define "dominoes"}}
+{{define "game"}}
 <div id="content" class="text-center mt-3">
 
 <script>
@@ -15,7 +15,8 @@
     var game = {
         scores: [{{ (index .Players 0).Score }}, {{ (index .Players 1).Score }}],
         names: [{{ (index .Players 0).Name }}, {{ (index .Players 1).Name }}],
-        max: {{ .MaxScore }}
+        max: {{ .MaxScore }},
+        buttons: {{ .Buttons }}
     }
 
     function escapeAttr(s) {
@@ -78,8 +79,7 @@
             makeButton(player, -1 * increment) + '</div>'
     }
     function makeButtons(player) {
-        return makeButtonPair(player, 5) + makeButtonPair(player, 10) + makeButtonPair(player, 15) +
-            makeButtonPair(player, 20) + makeButtonPair(player, 25) + makeButtonPair(player , 30)
+        return game.buttons.map((increment) => makeButtonPair(player, increment)).join("")
     }
     document.getElementById("p0-buttons").innerHTML = makeButtons(0)
     document.getElementById("p1-buttons").innerHTML = makeButtons(1)
